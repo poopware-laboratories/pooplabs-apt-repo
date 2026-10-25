@@ -27,7 +27,7 @@ jobs:
       changed: ${{ steps.build.outputs.changed }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Ensure Debian package tools are installed
         run: |
