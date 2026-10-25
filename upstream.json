@@ -1,0 +1,7 @@
+[
+  {
+    "package": "poopterm",
+    "repo": "poopware-laboratories/poopterm",
+    "asset_pattern": "^poopterm_[0-9A-Za-z.+~-]+_amd64\\.deb$"
+  }
+]

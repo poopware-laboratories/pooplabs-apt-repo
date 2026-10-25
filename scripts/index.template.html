@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Poop Labs APT Repository</title>
+    <meta name="description" content="Debian and jailbreak packages maintained by Poopware Laboratories.">
+    <link rel="icon" href="CydiaIcon.png">
+    <style>
+      :root { color-scheme: light dark; --bg: #fff; --fg: #1d1d1f; --muted: #6e6e73; --line: #d2d2d7; --code: #f5f5f7; --accent: #8a5a2b; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #161618; --fg: #f5f5f7; --muted: #a1a1a6; --line: #38383a; --code: #232326; --accent: #d9a066; } }
+      body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+      main { max-width: 52rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+      header { display: flex; align-items: center; gap: 1rem; }
+      header img { width: 64px; height: 64px; border-radius: 14px; }
+      h1 { margin: 0; font-size: 1.8rem; }
+      h2 { margin-top: 2.5rem; font-size: 1.3rem; }
+      p.lead { color: var(--muted); margin: .2rem 0 0; }
+      a { color: var(--accent); }
+      pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: .8rem 1rem; overflow-x: auto; position: relative; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+      button { position: absolute; top: .5rem; right: .5rem; font: inherit; font-size: .8rem; padding: .2rem .6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); cursor: pointer; }
+      .buttons { display: flex; flex-wrap: wrap; gap: .6rem; margin: 1rem 0; }
+      .buttons a { padding: .5rem 1rem; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; background: var(--code); }
+      table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+      th, td { text-align: left; padding: .6rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; }
+      .table-wrap { overflow-x: auto; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="CydiaIcon.png" alt="" width="64" height="64">
+        <div>
+          <h1>Poop Labs APT Repository</h1>
+          <p class="lead">Debian and jailbreak packages maintained by <a href="https://github.com/poopware-laboratories">Poopware Laboratories</a>.</p>
+        </div>
+      </header>
+
+      <h2>Add to a jailbroken iOS device</h2>
+      <p>Open the link on the device, or add <code>{{URL}}</code> manually under Sources.</p>
+      <div class="buttons">
+        <a href="{{CYDIA_LINK}}">Cydia</a>
+        <a href="{{SILEO_LINK}}">Sileo</a>
+        <a href="{{ZEBRA_LINK}}">Zebra</a>
+      </div>
+
+      <h2>Add to Debian or Ubuntu</h2>
+      <pre><code>{{APT_SETUP}}</code><button type="button" hidden>Copy</button></pre>
+      <p>{{TRUST_NOTE}} APT picks packages that match your machine's architecture.</p>
+
+      <h2>Packages</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Package</th><th>Description</th><th>Version</th><th>Architecture</th><th>Download</th></tr></thead>
+          <tbody>
+{{PACKAGE_ROWS}}
+          </tbody>
+        </table>
+      </div>
+    </main>
+    <script>
+      document.querySelectorAll("pre button").forEach(function (button) {
+        if (!navigator.clipboard) return;
+        button.hidden = false;
+        button.addEventListener("click", function () {
+          navigator.clipboard.writeText(button.previousElementSibling.textContent).then(function () {
+            button.textContent = "Copied";
+            setTimeout(function () { button.textContent = "Copy"; }, 1500);
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

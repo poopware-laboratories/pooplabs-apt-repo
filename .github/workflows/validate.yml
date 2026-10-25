@@ -1,0 +1,42 @@
+name: Validate APT feed
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Ensure Debian package tools are installed
+        run: |
+          command -v dpkg-scanpackages >/dev/null || {
+            sudo apt-get update
+            sudo apt-get install -y dpkg-dev
+          }
+
+      - name: Lint scripts
+        run: |
+          shellcheck scripts/build-feed.sh scripts/generate-signing-key.sh
+          python3 -m py_compile scripts/render-index.py
+
+      - name: Build feed (unsigned)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUT_DIR: ${{ runner.temp }}/site
+        run: scripts/build-feed.sh
+
+      - name: Check generated feed
+        env:
+          OUT_DIR: ${{ runner.temp }}/site
+        run: |
+          set -euo pipefail
+          cd "$OUT_DIR"
+          for f in Packages Packages.gz Packages.bz2 Packages.xz Release index.html; do test -s "$f"; done
+          grep -q '^Package: ' Packages
+          for f in $(sed -n 's/^Filename: //p' Packages); do test -s "$f"; done

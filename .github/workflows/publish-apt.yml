@@ -6,114 +6,43 @@ on:
       - main
     paths:
       - 'debs/*.deb'
+      - 'upstream.json'
       - 'CydiaIcon.png'
-      - 'index.html'
+      - 'scripts/**'
       - '.github/workflows/publish-apt.yml'
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: github-pages
   cancel-in-progress: false
 
 jobs:
-  publish:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install Debian package tools
+      - name: Ensure Debian package tools are installed
         run: |
-          sudo apt-get update
-          sudo apt-get install -y dpkg-dev
+          command -v dpkg-scanpackages >/dev/null || {
+            sudo apt-get update
+            sudo apt-get install -y dpkg-dev
+          }
 
-      - name: Generate APT indexes
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          packages=(debs/*.deb)
-          if ((${#packages[@]} == 0)); then
-            echo "No .deb packages found directly in debs/" >&2
-            exit 1
-          fi
-
-          mkdir -p _site/debs
-          cp "${packages[@]}" _site/debs/
-
-          release_json=$(mktemp)
-          trap 'rm -f "$release_json"' EXIT
-          curl -fsSL \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            https://api.github.com/repos/poopware-laboratories/poopterm/releases/latest \
-            -o "$release_json"
-          asset_name=$(jq -r '[.assets[] | select((.name | startswith("poopterm_")) and (.name | endswith("_amd64.deb")))] | first | .name // empty' "$release_json")
-          if [[ -n "$asset_name" ]]; then
-            if [[ ! "$asset_name" =~ ^poopterm_[0-9A-Za-z.+~-]+_amd64\.deb$ ]]; then
-              echo "Unexpected Poopterm package asset name: $asset_name" >&2
-              exit 1
-            fi
-            asset_url=$(jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .browser_download_url' "$release_json")
-            if [[ "$asset_url" != https://github.com/* ]]; then
-              echo "Unexpected Poopterm package asset URL" >&2
-              exit 1
-            fi
-            curl -fLsS --retry 3 "$asset_url" -o "_site/debs/$asset_name"
-          else
-            echo "The latest Poopterm release has no amd64 .deb asset yet; publishing the other packages."
-          fi
-
-          packages=(_site/debs/*.deb)
-          if ((${#packages[@]} == 0)); then
-            echo "No .deb packages are available to publish" >&2
-            exit 1
-          fi
-
-          mkdir -p _site
-          (
-            cd _site
-            dpkg-scanpackages --multiversion debs /dev/null > Packages
-            gzip -9c Packages > Packages.gz
-            cp ../index.html index.html
-            cp ../CydiaIcon.png CydiaIcon.png
-            touch .nojekyll
-
-            architectures=$(
-              for package in debs/*.deb; do
-                dpkg-deb -f "$package" Architecture
-              done | sort -u | paste -sd ' ' -
-            )
-
-            {
-              cat <<EOF
-          Origin: poopware-laboratories
-          Label: Poop Labs APT Repository
-          Suite: stable
-          Codename: stable
-          Architectures: $architectures
-          Components: main
-          Description: Debian and jailbreak packages maintained by poopware-laboratories
-          Date: $(date -Ru)
-          SHA256:
-          EOF
-              for file in Packages Packages.gz; do
-                hash=$(sha256sum "$file" | cut -d' ' -f1)
-                size=$(wc -c < "$file" | tr -d ' ')
-                printf ' %s %s %s\n' "$hash" "$size" "$file"
-              done
-            } > Release
-          )
+      - name: Build APT feed
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+        run: scripts/build-feed.sh
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -123,6 +52,18 @@ jobs:
         with:
           path: _site
 
+  deploy:
+    needs: build
+    # The hourly refresh only deploys when the package index actually changed.
+    if: github.event_name != 'schedule' || needs.build.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
