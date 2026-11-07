@@ -1,8 +1,8 @@
 [
   {
     "package": "ripple-native",
-    "repo": "vgs499p/ripple-mac",
-    "release_tag": "v0.4.0-beta.6",
-    "asset_pattern": "^ripple-native-0\\.4\\.0-0\\.beta\\.6\\.x86_64\\.rpm$"
+    "repo": "vgs499p/ripple-desktop",
+    "release_tag": "v0.4.0-beta.7",
+    "asset_pattern": "^ripple-native-0\\.4\\.0-0\\.beta\\.7\\.x86_64\\.rpm$"
   }
 ]
