@@ -67,17 +67,20 @@ carry_over() {
 }
 
 import_upstream() {
-  local entry package repo pattern api=() name url digest tmp
+  local entry package repo pattern tag endpoint api=() name url digest tmp
   [[ -n "${GH_TOKEN:-}" ]] && api=(-H "Authorization: Bearer $GH_TOKEN")
   tmp=$(mktemp)
   while IFS= read -r entry; do
     package=$(jq -r .package <<<"$entry")
     repo=$(jq -r .repo <<<"$entry")
     pattern=$(jq -r .asset_pattern <<<"$entry")
+    tag=$(jq -r ' .release_tag // empty' <<<"$entry")
+    endpoint="releases/latest"
+    [[ -z "$tag" ]] || endpoint="releases/tags/$tag"
     if ! curl -fsSL --retry 3 "${api[@]}" \
       -H 'Accept: application/vnd.github+json' \
       -H 'X-GitHub-Api-Version: 2022-11-28' \
-      "https://api.github.com/repos/$repo/releases/latest" -o "$tmp"; then
+      "https://api.github.com/repos/$repo/$endpoint" -o "$tmp"; then
       warn "Could not query the latest $repo release"
       carry_over "$package"
       continue
@@ -212,11 +215,17 @@ main() {
     touch .nojekyll
   )
 
+  if [[ "$SKIP_UPSTREAM" != 1 ]]; then
+    OUT_DIR="$OUT_DIR/rpm" "$ROOT/scripts/build-rpm-feed.sh"
+  fi
+
   # Tell the workflow whether the package set differs from what is live.
   if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
     local live changed=true
     live=$(curl -fsSL --retry 2 "$FEED_URL/Packages" 2>/dev/null | sha256sum | cut -d' ' -f1) || live=
     [[ "$live" == "$(sha256sum "$OUT_DIR/Packages" | cut -d' ' -f1)" ]] && changed=false
+    # RPM metadata is generated independently; deploy the combined hourly feed.
+    [[ "$SKIP_UPSTREAM" == 1 ]] || changed=true
     echo "changed=$changed" >>"$GITHUB_OUTPUT"
   fi
   log "Feed written to $OUT_DIR"

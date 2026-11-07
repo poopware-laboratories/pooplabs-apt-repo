@@ -3,5 +3,11 @@
     "package": "poopterm",
     "repo": "poopware-laboratories/poopterm",
     "asset_pattern": "^poopterm_[0-9A-Za-z.+~-]+_amd64\\.deb$"
+  },
+  {
+    "package": "ripple-native",
+    "repo": "vgs499p/ripple-mac",
+    "release_tag": "v0.4.0-beta.6",
+    "asset_pattern": "^ripple-native_[0-9A-Za-z.+~\\-]+_amd64\\.deb$"
   }
 ]

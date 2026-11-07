@@ -50,6 +50,11 @@
       <pre><code>{{APT_SETUP}}</code><button type="button" hidden>Copy</button></pre>
       <p>{{TRUST_NOTE}} APT picks packages that match your machine's architecture.</p>
 
+      <h2>Add to Fedora or another DNF distribution</h2>
+      <pre><code>sudo curl -fsSL https://poopware-laboratories.github.io/pooplabs-apt-repo/rpm/pooplabs.repo -o /etc/yum.repos.d/pooplabs.repo
+sudo dnf install ripple-native</code></pre>
+      <p>RPM packages are checksum-verified from GitHub Releases during publication. The current RPM feed is unsigned.</p>
+
       <h2>Packages</h2>
       <div class="table-wrap">
         <table>
