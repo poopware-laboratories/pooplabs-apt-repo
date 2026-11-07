@@ -7,6 +7,7 @@ on:
     paths:
       - 'debs/*.deb'
       - 'upstream.json'
+      - 'rpm-upstream.json'
       - 'CydiaIcon.png'
       - 'scripts/**'
       - '.github/workflows/publish-apt.yml'
@@ -31,10 +32,8 @@ jobs:
 
       - name: Ensure Debian package tools are installed
         run: |
-          command -v dpkg-scanpackages >/dev/null || {
-            sudo apt-get update
-            sudo apt-get install -y dpkg-dev
-          }
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev rpm createrepo-c
 
       - name: Build APT feed
         id: build

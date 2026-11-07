@@ -53,3 +53,16 @@ To import a package from another repository's releases, add it to `upstream.json
 1. Open **Settings → Pages** and set the build and deployment source to **GitHub Actions**.
 2. Run `scripts/generate-signing-key.sh` on a trusted machine and add the printed private key as the repository secret `APT_GPG_PRIVATE_KEY` (and `APT_GPG_PASSPHRASE` if you set a passphrase). The next workflow run signs the feed. Keep a backup of the key: if you lose it, every user must re-import a new one.
 3. Recommended: protect `main` (require pull requests and the *Validate APT feed* check), since pushes to it publish to users.
+
+## Desktop Ripple and RPM packages
+
+Ripple desktop prereleases are pinned by `release_tag` in `upstream.json` and imported into the APT feed alongside the iOS packages. The desktop package is `ripple-native`; the iOS package keeps its existing identifier. This allows prereleases without silently following unrelated tags.
+
+`rpm-upstream.json` pins RPM release assets. `scripts/build-rpm-feed.sh` verifies GitHub SHA-256 digests and RPM package names, then builds `rpm/repodata` using createrepo_c in the same Pages deployment. The RPM feed is currently unsigned (`gpgcheck=0`). Add it with:
+
+```sh
+sudo curl -fsSL https://poopware-laboratories.github.io/pooplabs-apt-repo/rpm/pooplabs.repo -o /etc/yum.repos.d/pooplabs.repo
+sudo dnf install ripple-native
+```
+
+Install `rpm` and `createrepo-c` alongside the existing build tools to build both feeds locally. `SKIP_UPSTREAM=1` remains an offline APT-only build; normal publication requires every pinned RPM asset to exist and match its digest.
